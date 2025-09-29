@@ -1,0 +1,31 @@
+---
+- name: Check if already joined cluster
+  stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf
+
+- name: Check if kubeconfig exists on control plane
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: control_plane_ready
+  delegate_to: "{{ groups['control_plane'][0] }}"
+
+- name: Generate join command from control plane
+  shell: kubeadm token create --print-join-command
+  register: join_command
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  when: control_plane_ready.stat.exists and not kubelet_conf.stat.exists
+
+- name: Join cluster
+  shell: "{{ join_command.stdout }} --cri-socket=unix:///run/containerd/containerd.sock"
+  when: join_command is succeeded and not kubelet_conf.stat.exists
+
+- name: Debug - Show join command
+  debug:
+    msg: "Join command: {{ join_command.stdout }}"
+  when: join_command is succeeded
+
+- name: Debug - Show error if control plane not ready
+  debug:
+    msg: "Control plane not ready. Kubeadm admin.conf not found on {{ groups['control_plane'][0] }}"
+  when: not control_plane_ready.stat.exists

@@ -1,0 +1,5 @@
+---
+k8s_version: "1.30.0"
+pod_cidr: "10.244.0.0/16"  # For Cilium (flannel-like, but eBPF)
+cilium_version: "1.16.0"   # Latest stable
+control_plane_endpoint: "{{ groups['control_plane'][0] }}"

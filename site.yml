@@ -1,0 +1,21 @@
+---
+- name: Prerequisites
+  hosts: all
+  roles:
+    - prerequisites
+    - kube-components
+
+- name: Control plane setup
+  hosts: control_plane
+  roles:
+    - control-plane
+
+- name: Workers join
+  hosts: workers
+  roles:
+    - workers
+
+- name: Install Cilium
+  hosts: control_plane
+  roles:
+    - cilium

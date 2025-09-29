@@ -1,0 +1,111 @@
+---
+- name: Update system
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Install prerequisites
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - python3-pip
+    state: present
+
+- name: Disable swap
+  command: swapoff -a
+  changed_when: false
+
+- name: Remove swap from fstab
+  lineinfile:
+    path: /etc/fstab
+    regexp: '^.*swap.*$'
+    state: absent
+
+- name: Load kernel modules
+  copy:
+    content: |
+      overlay
+      br_netfilter
+    dest: /etc/modules-load.d/k8s.conf
+  register: kernel_modules
+
+- name: Load kernel modules immediately
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Set sysctl params
+  copy:
+    content: |
+      net.bridge.bridge-nf-call-iptables = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward = 1
+    dest: /etc/sysctl.d/k8s.conf
+  register: sysctl_params
+
+- name: Apply sysctl
+  command: sysctl --system
+  when: sysctl_params is changed
+
+- name: Add Docker GPG key
+  shell: |
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  args:
+    creates: /etc/apt/keyrings/docker.gpg
+
+- name: Add Docker repository
+  copy:
+    content: |
+      deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu noble stable
+    dest: /etc/apt/sources.list.d/docker.list
+
+- name: Install ufw if not present
+  apt:
+    name: ufw
+    state: present
+
+- name: Allow SSH
+  ufw:
+    rule: allow
+    port: '22'
+
+- name: Allow Kubernetes API server
+  ufw:
+    rule: allow
+    port: '6443'
+  when: "'control_plane' in group_names"
+
+- name: Allow etcd
+  ufw:
+    rule: allow
+    port: '2379:2380'
+    proto: tcp
+  when: "'control_plane' in group_names"
+
+- name: Allow kubelet API
+  ufw:
+    rule: allow
+    port: '10250'
+
+- name: Allow NodePort services (TCP)
+  ufw:
+    rule: allow
+    port: '30000:32767'
+    proto: tcp
+
+- name: Allow NodePort services (UDP)
+  ufw:
+    rule: allow
+    port: '30000:32767'
+    proto: udp
+
+- name: Enable ufw
+  ufw:
+    state: enabled
