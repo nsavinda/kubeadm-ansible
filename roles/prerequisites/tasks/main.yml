@@ -15,6 +15,24 @@
       - python3-pip
     state: present
 
+- name: Add control plane host entries to /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
+    state: present
+    backup: yes
+  loop: "{{ groups['control_plane'] }}"
+  when: groups['control_plane'] is defined
+
+- name: Add worker host entries to /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
+    state: present
+    backup: yes
+  loop: "{{ groups['workers'] }}"
+  when: groups['workers'] is defined
+
 - name: Disable swap
   command: swapoff -a
   changed_when: false
