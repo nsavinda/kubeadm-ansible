@@ -1,4 +1,10 @@
 ---
+- name: Sync system time from Google header
+  become: true
+  ansible.builtin.shell: |
+    date -s "$(curl -s --head http://google.com | grep ^Date: | sed 's/Date: //g')"
+  changed_when: false
+    
 - name: Update system
   apt:
     update_cache: yes

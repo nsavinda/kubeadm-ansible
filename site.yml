@@ -19,3 +19,8 @@
   hosts: control_plane
   roles:
     - cilium
+
+- name: Install Tools
+  hosts: control_plane
+  roles:
+    - tools

@@ -1,0 +1,51 @@
+---
+- name: Ensure .kube directory exists for root
+  file:
+    path: /root/.kube
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Copy Kubernetes config for root
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    owner: root
+    group: root
+    mode: '0600'
+    remote_src: yes
+
+- name: Install Helm
+  shell: |
+    curl -fsSL https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz -o /tmp/helm.tar.gz
+    tar -zxvf /tmp/helm.tar.gz -C /tmp
+    mv /tmp/linux-amd64/helm /usr/local/bin/helm
+    chmod +x /usr/local/bin/helm
+  args:
+    creates: /usr/local/bin/helm
+
+- name: Add kubernetes-dashboard Helm repo
+  shell: |
+    helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+    helm repo update
+  register: helm_repo
+  until: helm_repo.rc == 0
+  retries: 3
+  delay: 5
+
+- name: Install Kubernetes Dashboard
+  shell: |
+    helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard
+  register: dashboard_install
+  until: dashboard_install.rc == 0
+  retries: 3
+  delay: 10
+
+- name: Wait for Dashboard pods to be ready
+  shell: |
+    kubectl wait --for=condition=Ready pods --all -n kubernetes-dashboard --timeout=300s
+  register: dashboard_wait
+  until: dashboard_wait.rc == 0
+  retries: 5
+  delay: 10

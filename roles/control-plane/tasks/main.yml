@@ -113,4 +113,4 @@
 - name: Show join command for verification
   debug:
     msg: "Join command: {{ join_command_output.stdout }}"
-  when: join_command_output is succeeded
+  when: join_command_output is succeeded and join_command_output.stdout is defined
