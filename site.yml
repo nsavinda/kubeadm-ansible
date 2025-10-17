@@ -24,3 +24,9 @@
   hosts: control_plane
   roles:
     - tools
+
+- name: Install Apps
+  hosts: control_plane
+  roles:
+    - apps
+    

@@ -130,6 +130,18 @@
     port: '30000:32767'
     proto: udp
 
+- name: Allow Cilium VXLAN
+  ufw:
+    rule: allow
+    port: '8472'
+    proto: udp
+
+- name: Allow Cilium health checks
+  ufw:
+    rule: allow
+    port: '4240'
+    proto: tcp
+
 - name: Enable ufw
   ufw:
     state: enabled

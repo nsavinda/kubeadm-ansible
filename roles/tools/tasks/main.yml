@@ -28,13 +28,14 @@
     owner: root
     group: root
 
+- name: Check if argocd namespace exists
+  shell: kubectl get namespace argocd
+  register: argocd_ns_check
+  ignore_errors: yes
+
 - name: Create argocd namespace
-  ansible.builtin.shell: |
-    kubectl create namespace argocd
-  register: argocd_namespace
-  until: argocd_namespace.rc == 0
-  retries: 2
-  delay: 10
+  shell: kubectl create namespace argocd
+  when: argocd_ns_check.rc != 0
 
 - name: Apply ArgoCD install manifest
   ansible.builtin.shell: |
@@ -52,11 +53,7 @@
   retries: 5
   delay: 10
 
-# Ingress Installation (placeholder - add tasks here)
-# - name: Install Ingress Controller
-#   # Add your ingress installation tasks here
-
-# Kubernetes Dashboard Installation
+# Helm Installation
 - name: Install Helm
   shell: |
     curl -fsSL https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz -o /tmp/helm.tar.gz
@@ -66,6 +63,33 @@
   args:
     creates: /usr/local/bin/helm
 
+# Ingress Installation
+- name: Add ingress-nginx Helm repo
+  shell: |
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo update
+  register: ingress_repo
+  until: ingress_repo.rc == 0
+  retries: 3
+  delay: 5
+
+- name: Install NGINX Ingress Controller
+  shell: |
+    helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx --create-namespace --namespace ingress-nginx
+  register: ingress_install
+  until: ingress_install.rc == 0
+  retries: 3
+  delay: 10
+
+- name: Wait for Ingress Controller pods to be ready
+  shell: |
+    kubectl wait --for=condition=Ready pods --all -n ingress-nginx --timeout=300s
+  register: ingress_wait
+  until: ingress_wait.rc == 0
+  retries: 5
+  delay: 10
+
+ ## Kubernetes Dashboard Installation
 - name: Add kubernetes-dashboard Helm repo
   shell: |
     helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/

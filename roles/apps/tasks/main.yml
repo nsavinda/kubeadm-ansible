@@ -1,0 +1,18 @@
+---
+# Apps role tasks
+# Add application deployment tasks here
+
+
+# Apply ArgoCD config
+- name: Get ArgoCD config
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/nsavinda/k8s-test/main/argocd.yaml
+    dest: /tmp/argocd-config.yaml
+    mode: '0644'
+
+- name: Apply ArgoCD config
+  shell: kubectl apply -f /tmp/argocd-config.yaml -n argocd
+  register: argocd_config_apply
+  until: argocd_config_apply.rc == 0
+  retries: 3
+  delay: 5
