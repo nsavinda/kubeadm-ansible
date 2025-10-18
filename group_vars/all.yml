@@ -4,6 +4,14 @@ pod_cidr: "10.244.0.0/16"  # For Cilium (flannel-like, but eBPF)
 cilium_version: "1.16.0"   # Latest stable
 control_plane_endpoint: "{{ groups['control_plane'][0] }}"
 
+# Host IP mappings for /etc/hosts entries
+host_ips:
+  # Add your host IP mappings here
+  # Example:
+  cp1: "192.168.122.166"
+  worker1: "192.168.122.29"
+  worker2: "192.168.122.146"
+
 # ArgoCD Configuration
 argocd_version: "2.12.3"   # Latest stable version
 argocd_expose_type: "nodeport"  # Options: nodeport, loadbalancer, portforward
