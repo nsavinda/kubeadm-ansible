@@ -13,7 +13,7 @@ host_ips:
   worker2: "192.168.122.146"
 
 # ArgoCD Configuration
-argocd_version: "2.12.3"   # Latest stable version
-argocd_expose_type: "nodeport"  # Options: nodeport, loadbalancer, portforward
-argocd_nodeport_port: 30080
-argocd_grpc_nodeport_port: 30443
+# argocd_version: "2.12.3"   # Latest stable version
+# argocd_expose_type: "nodeport"  # Options: nodeport, loadbalancer, portforward
+# argocd_nodeport_port: 30080
+# argocd_grpc_nodeport_port: 30443
